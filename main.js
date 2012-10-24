@@ -1,8 +1,4 @@
-// This code is by John Weachock (jweachock@gmail.com)
-// Do what you want with it. Give me credit if you feel like it.
-// Comments, criticism, questions, etc. are all welcome.
-
-// Calculates the hypotenuse of a triangle
+// MATH:dist | Calculates the hypotenuse of a triangle
 Math.dist=function(dx,dy) {
 	return Math.sqrt(dx*dx+dy*dy);
 }
@@ -35,40 +31,6 @@ function Surface() {
 
 		// Number of particles and the base array of elements
 		this.elements=[];
-
-		/*
-		// Populate the elements
-		for(var a=0;a<this.parts;a++) {
-			// Radian position of the current particle number
-			var t=a/this.parts*Math.PI*2;
-
-			// Get the destination position via the graph function
-			// and scale it to be actually visible
-			var z=f(t);
-			z[0]*=10;
-			z[0]+=this.width/2;
-			z[1]*=10;
-			z[1]+=this.height/2;
-
-			// Get the smallest dimension of the browser
-			var r=Math.min(this.height/2,this.width/2);
-
-			// Make a new particle with a rainbow'd color and radius of 3px
-			var e=new Particle(this,new HSL(a*360/this.parts,1,0.5),3);
-
-			// Set its initial position in a circle around the center
-			e.setPos(this.width/2 + r*Math.cos(t-Math.PI/2), this.height/2 + r*Math.sin(t-Math.PI/2));
-
-			// Set its destination position to a point around the curve
-			e.setTarget(z[0],z[1]);
-
-			// Delay its release
-			e.setDelay(a*2);
-
-			// Push it into the elements array
-			this.elements.push(e);
-		}
-		*/
 
 		// Start the engine
 		this.step();
@@ -104,20 +66,25 @@ Surface.prototype.moused=function(e) {
 	var clicked=false;
 	for(var i=0;i<this.elements.length;i++) {
 		var o=this.elements[i];
-		if(o && o.hitTest && o.hitTest(this.mx,this.my)) {
+		// If it's a thing, has a hitTest(), has a mousePress, and is actually hitTesting...
+		if(o && o.hitTest && o.mousePress && o.hitTest(this.mx,this.my)) {
+			// Press the cursor on it
 			o.mousePress();
+
+			// Don't spawn a new ball
 			clicked=true;
+			
+			// and don't look for a new ball, either
+			break;
 		}
 	}
 	if(!clicked) {
 		// Make a new particle
 		var e=new Particle(this,new HSL(Math.random()*360,1,0.5),30);
 
-		// Set its initial position to the cursor
+		// Set its initial position to the cursor and start dragging immediately
 		e.setPos(this.mx,this.my);
-
-		// Set its initial direction to random
-		e.setDir(Math.random()*5-2.5,Math.random()*5-2.5);
+		e.mousePress();
 
 		// Push it into the elements array
 		this.elements.push(e);
@@ -128,7 +95,9 @@ Surface.prototype.moused=function(e) {
 Surface.prototype.mouseu=function(e) {
 	for(var i=0;i<this.elements.length;i++) {
 		var o=this.elements[i];
-		if(o && o.hitTest && o.hitTest(this.mx,this.my)) {
+		// If it's a thing, is being dragged, and has a mouseRelease...
+		if(o && o.dragging && o.mouseRelease) {
+			// Release the cursor on it
 			o.mouseRelease();
 		}
 	}
@@ -157,22 +126,54 @@ function Particle(_surface,_color,_radius) {
 	this.surface=_surface;
 	this.color=_color;
 	this.radius=_radius;
+	this.dragging=false;
 	this.dx=0;
 	this.dy=0;
 }
 Particle.prototype=new Element();
 
-// PARTICLE:setDir   | Sets the direction of motion
+// PARTICLE:setDir | Sets the direction of motion
 Particle.prototype.setDir=function(_dx,_dy) {
 	this.dx=_dx;
 	this.dy=_dy;
 }
 
+// PARTICLE:hitTest | Check if a point is in contact with the object
+Particle.prototype.hitTest=function(_x,_y) {
+	return (Math.dist(_x-this.x,_y-this.y)<=this.radius);
+}
+
+// PARTICLE:mousePress | Called when the mouse presses the object
+Particle.prototype.mousePress=function() {
+	this.dx=0;
+	this.dy=0;
+	this.dragging=true;
+}
+
+// PARTICLE:mouseRelease | Called when the mouse releases the object
+Particle.prototype.mouseRelease=function() {
+	this.dragging=false;
+}
+
 // PARTICLE:ELEMENT:step | Updates the position and acceleration every frame
 Particle.prototype.step=function() {
-	// Adjust position based on acceleration
-	this.x+=this.dx;
-	this.y+=this.dy;
+	// If it's being dragged by the cursor...
+	if(this.dragging) {
+		this.dx=this.surface.mx-this.x;
+		this.dy=this.surface.my-this.y;
+		this.x=this.surface.mx;
+		this.y=this.surface.my;
+	} else {
+		// Adjust position based on acceleration
+		this.x+=this.dx;
+		this.y+=this.dy;
+	}
+	
+	// Boundary checks
+	if(this.x<this.radius) this.x=this.radius;
+	if(this.y<this.radius) this.y=this.radius;
+	if(this.x>this.surface.width-this.radius) this.x=this.surface.width-this.radius;
+	if(this.y>this.surface.height-this.radius) this.y=this.surface.height-this.radius;
 }
 
 // PARTICLE:ELEMENT:draw | Draws the particle
