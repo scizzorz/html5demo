@@ -49,6 +49,7 @@ Surface.prototype.step=function() {
 	// Loop through the elements
 	for(var i=0;i<this.elements.length;i++) {
 		var o=this.elements[i];
+
 		// If it's a thing, has a step(), and has a draw()...
 		if(o && o.step && o.draw) {
 			// Step and draw it
@@ -64,8 +65,11 @@ Surface.prototype.step=function() {
 // SURFACE:moused | Called when the a mouse button is pressed
 Surface.prototype.moused=function(e) {
 	var clicked=false;
+
+	// Loop through the elements
 	for(var i=0;i<this.elements.length;i++) {
 		var o=this.elements[i];
+
 		// If it's a thing, has a hitTest(), has a mousePress, and is actually hitTesting...
 		if(o && o.hitTest && o.mousePress && o.hitTest(this.mx,this.my)) {
 			// Press the cursor on it
@@ -78,9 +82,14 @@ Surface.prototype.moused=function(e) {
 			break;
 		}
 	}
+
+	// If we didn't click an existing ball, we should make a new one
 	if(!clicked) {
+		// Make a new random color along the color wheel
+		var color=new HSL(Math.random()*360,1,0.5);
+
 		// Make a new particle
-		var e=new Particle(this,new HSL(Math.random()*360,1,0.5),30);
+		var e=new Particle(this,color,1,0.5),30);
 
 		// Set its initial position to the cursor and start dragging immediately
 		e.setPos(this.mx,this.my);
@@ -93,8 +102,10 @@ Surface.prototype.moused=function(e) {
 
 // SURFACE:mouseu | Called when the a mouse button is released
 Surface.prototype.mouseu=function(e) {
+	// Loop through the elements
 	for(var i=0;i<this.elements.length;i++) {
 		var o=this.elements[i];
+
 		// If it's a thing, is being dragged, and has a mouseRelease...
 		if(o && o.dragging && o.mouseRelease) {
 			// Release the cursor on it
@@ -121,7 +132,7 @@ Element.prototype.setPos=function(x,y) {
 	this.y=y;
 }
 
-// PARTICLE | More detailed element with 
+// PARTICLE | More detailed element with actual functionality
 function Particle(_surface,_color,_radius) {
 	this.surface=_surface;
 	this.color=_color;
@@ -130,7 +141,7 @@ function Particle(_surface,_color,_radius) {
 	this.dx=0;
 	this.dy=0;
 }
-Particle.prototype=new Element();
+Particle.prototype=new Element(); // inherit from Element
 
 // PARTICLE:setDir | Sets the direction of motion
 Particle.prototype.setDir=function(_dx,_dy) {
