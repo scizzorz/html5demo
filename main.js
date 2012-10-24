@@ -89,7 +89,7 @@ Surface.prototype.moused=function(e) {
 		var color=new HSL(Math.random()*360,1,0.5);
 
 		// Make a new particle
-		var e=new Particle(this,color,1,0.5),30);
+		var e=new Particle(this,color,30);
 
 		// Set its initial position to the cursor and start dragging immediately
 		e.setPos(this.mx,this.my);
@@ -181,10 +181,22 @@ Particle.prototype.step=function() {
 	}
 	
 	// Boundary checks
-	if(this.x<this.radius) this.x=this.radius;
-	if(this.y<this.radius) this.y=this.radius;
-	if(this.x>this.surface.width-this.radius) this.x=this.surface.width-this.radius;
-	if(this.y>this.surface.height-this.radius) this.y=this.surface.height-this.radius;
+	if(this.x<this.radius) {
+		this.x=this.radius;
+		this.dx*=-0.6;
+	}
+	if(this.y<this.radius) {
+		this.y=this.radius;
+		this.dy*=-0.6;
+	}
+	if(this.x>this.surface.width-this.radius) {
+		this.x=this.surface.width-this.radius;
+		this.dx*=-0.6;
+	}
+	if(this.y>this.surface.height-this.radius) {
+		this.y=this.surface.height-this.radius;
+		this.dy*=-0.6;
+	}
 }
 
 // PARTICLE:ELEMENT:draw | Draws the particle
