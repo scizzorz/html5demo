@@ -15,14 +15,6 @@ function HSL(h,s,l) {
 	this.v="hsl("+Math.round(h)+","+Math.round(s*100)+"%,"+Math.round(l*100)+"%)";
 }
 
-// f | Polar graph function for the final shape
-function f(t) {
-	// Heart curve from Wolfram Math World (http://mathworld.wolfram.com/HeartCurve.html)
-	var x=16*Math.pow(Math.sin(t),3);
-	var y=-1*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
-	return [x,y];
-}
-
 // SURFACE | Handles the canvas and stuff
 function Surface() {
 	// Grabs the canvas element
@@ -42,9 +34,9 @@ function Surface() {
 		this.my=0;
 
 		// Number of particles and the base array of elements
-		this.parts=500;
 		this.elements=[];
 
+		/*
 		// Populate the elements
 		for(var a=0;a<this.parts;a++) {
 			// Radian position of the current particle number
@@ -76,6 +68,7 @@ function Surface() {
 			// Push it into the elements array
 			this.elements.push(e);
 		}
+		*/
 
 		// Start the engine
 		this.step();
@@ -107,15 +100,37 @@ Surface.prototype.step=function() {
 }
 
 // SURFACE:moused | Called when the a mouse button is pressed
-//				  | Launches all of the particles off in random directions
-//				  | Note: does *not* change the delay - any unreleased
-//				  | particles will remain held at their starting position
-//				  | and launche in their new direction when they can
 Surface.prototype.moused=function(e) {
+	var clicked=false;
 	for(var i=0;i<this.elements.length;i++) {
-		var e=this.elements[i];
-		e.dx=Math.random()*30-15;
-		e.dy=Math.random()*30-15;
+		var o=this.elements[i];
+		if(o && o.hitTest && o.hitTest(this.mx,this.my)) {
+			o.mousePress();
+			clicked=true;
+		}
+	}
+	if(!clicked) {
+		// Make a new particle
+		var e=new Particle(this,new HSL(Math.random()*360,1,0.5),30);
+
+		// Set its initial position to the cursor
+		e.setPos(this.mx,this.my);
+
+		// Set its initial direction to random
+		e.setDir(Math.random()*5-2.5,Math.random()*5-2.5);
+
+		// Push it into the elements array
+		this.elements.push(e);
+	}
+}
+
+// SURFACE:mouseu | Called when the a mouse button is released
+Surface.prototype.mouseu=function(e) {
+	for(var i=0;i<this.elements.length;i++) {
+		var o=this.elements[i];
+		if(o && o.hitTest && o.hitTest(this.mx,this.my)) {
+			o.mouseRelease();
+		}
 	}
 }
 
@@ -138,64 +153,23 @@ Element.prototype.setPos=function(x,y) {
 }
 
 // PARTICLE | More detailed element with 
-function Particle(surface,color,radius) {
-	this.surface=surface;
-	this.color=color;
-	this.radius=radius;
+function Particle(_surface,_color,_radius) {
+	this.surface=_surface;
+	this.color=_color;
+	this.radius=_radius;
 	this.dx=0;
 	this.dy=0;
-	this.fz=[0.99,0.9];
 }
 Particle.prototype=new Element();
 
-// PARTICLE:setDelay | Sets the launch countdown
-//					 | The particle will remain immobile until t frames have passed
-Particle.prototype.setDelay=function(t) {
-	this.delay=t;
-}
-
-// PARTICLE:setTarget | Sets the destination position
-Particle.prototype.setTarget=function(x,y) {
-	this.tx=x;
-	this.ty=y;
+// PARTICLE:setDir   | Sets the direction of motion
+Particle.prototype.setDir=function(_dx,_dy) {
+	this.dx=_dx;
+	this.dy=_dy;
 }
 
 // PARTICLE:ELEMENT:step | Updates the position and acceleration every frame
 Particle.prototype.step=function() {
-	// Don't do anything until we've delayed enough
-	if(this.delay>0) return this.delay--;
-	
-	// Ready-to-be-math'd variables for mouse warping
-	var rx=this.tx;
-	var ry=this.ty;
-
-	// Get distance from cursor
-	var mx=this.surface.mx-this.x;
-	var my=this.surface.my-this.y;
-	var m=Math.dist(mx,my);
-
-	// Warp target position by distance from cursor
-	rx-=8000*mx/m/m;
-	ry-=8000*my/m/m;
-
-	// Get distance from warped target
-	var dx=rx-this.x;
-	var dy=ry-this.y;
-	var d=Math.dist(dx,dy);
-
-	// Adjust "friction"
-	var z;
-	if(d<=1 && Math.dist(this.dx,this.dy)<=1) z=1;
-	else z=0;
-
-	// Accelerate towards
-	this.dx+=dx/d/10;
-	this.dy+=dy/d/10;
-
-	// Apply "friction"
-	this.dx*=this.fz[z];
-	this.dy*=this.fz[z];
-
 	// Adjust position based on acceleration
 	this.x+=this.dx;
 	this.y+=this.dy;
@@ -218,6 +192,7 @@ $(function() {
 	// Bind events
 	surface.canvas.addEventListener("mousedown",function(e) {surface.moused(e)},true);
 	surface.canvas.addEventListener("mousemove",function(e) {surface.mousem(e)},true);
+	surface.canvas.addEventListener("mouseup",function(e) {surface.mouseu(e)},true);
 
 	// Disable right clicks
 	window.addEventListener("selectstart",function(e) {e.preventDefault()},true);
