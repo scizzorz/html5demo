@@ -13,8 +13,10 @@ function HSL(h,s,l) {
 
 // SURFACE | Handles the canvas and stuff
 function Surface() {
-	// Grabs the canvas element
+	// Grabs the canvas element and the text fields
 	this.canvas=document.getElementById("surface");
+	this.left_txt = document.getElementById("left");
+	this.right_txt = document.getElementById("right");
 
 	// If the browser supports it, let's hit that up!
 	if(this.canvas.getContext) {
@@ -42,9 +44,21 @@ function Surface() {
 
 // SURFACE:step | Primary frame handler
 Surface.prototype.step=function() {
-	// Draw a black alpha rectangle over the whole canvas to create "trails" behind each particle
-	this.context.fillStyle="rgba(0,0,0,0.05)";
-	this.context.fillRect(0,0,this.width,this.height);
+	// Clear the whole drawing rectangle
+	this.context.clearRect(0,0,this.width,this.height);
+
+	// Set the line style to a 4px white line
+	this.context.strokeStyle="#FFF";
+	this.context.lineWidth=4;
+
+	// Draw a white line down the center of the screen
+	this.context.beginPath();
+	this.context.moveTo(this.width/2,0);
+	this.context.lineTo(this.width/2,this.height);
+	this.context.stroke();
+
+	this.left=0;
+	this.right=0;
 	
 	// Loop through the elements
 	for(var i=0;i<this.elements.length;i++) {
@@ -55,8 +69,13 @@ Surface.prototype.step=function() {
 			// Step and draw it
 			o.step();
 			o.draw();
+			if(o.x < this.width/2) this.left++;
+			else this.right++;
 		}
 	}
+
+	this.left_txt.html(this.left);
+	this.right_txt.html(this.right);
 
 	// Set a timeout to call this again in 10ms (pretty much whatever the fastest available interval is)
 	setTimeout("surface.step()",10);
@@ -138,16 +157,8 @@ function Particle(_surface,_color,_radius) {
 	this.color=_color;
 	this.radius=_radius;
 	this.dragging=false;
-	this.dx=0;
-	this.dy=0;
 }
 Particle.prototype=new Element(); // inherit from Element
-
-// PARTICLE:setDir | Sets the direction of motion
-Particle.prototype.setDir=function(_dx,_dy) {
-	this.dx=_dx;
-	this.dy=_dy;
-}
 
 // PARTICLE:hitTest | Check if a point is in contact with the object
 Particle.prototype.hitTest=function(_x,_y) {
@@ -156,8 +167,6 @@ Particle.prototype.hitTest=function(_x,_y) {
 
 // PARTICLE:mousePress | Called when the mouse presses the object
 Particle.prototype.mousePress=function() {
-	this.dx=0;
-	this.dy=0;
 	this.dragging=true;
 }
 
@@ -170,33 +179,19 @@ Particle.prototype.mouseRelease=function() {
 Particle.prototype.step=function() {
 	// If it's being dragged by the cursor...
 	if(this.dragging) {
-		this.dx=this.surface.mx-this.x;
-		this.dy=this.surface.my-this.y;
 		this.x=this.surface.mx;
 		this.y=this.surface.my;
-	} else {
-		// Adjust position based on acceleration
-		this.x+=this.dx;
-		this.y+=this.dy;
 	}
 	
 	// Boundary checks
-	if(this.x<this.radius) {
+	if(this.x<this.radius)
 		this.x=this.radius;
-		this.dx*=-0.6;
-	}
-	if(this.y<this.radius) {
+	if(this.y<this.radius)
 		this.y=this.radius;
-		this.dy*=-0.6;
-	}
-	if(this.x>this.surface.width-this.radius) {
+	if(this.x>this.surface.width-this.radius)
 		this.x=this.surface.width-this.radius;
-		this.dx*=-0.6;
-	}
-	if(this.y>this.surface.height-this.radius) {
+	if(this.y>this.surface.height-this.radius)
 		this.y=this.surface.height-this.radius;
-		this.dy*=-0.6;
-	}
 }
 
 // PARTICLE:ELEMENT:draw | Draws the particle
