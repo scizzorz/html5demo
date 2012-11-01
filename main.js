@@ -74,8 +74,8 @@ Surface.prototype.step=function() {
 		}
 	}
 
-	this.left_txt.html(this.left);
-	this.right_txt.html(this.right);
+	this.left_txt.innerHTML=this.left;
+	this.right_txt.innerHTML=this.right;
 
 	// Set a timeout to call this again in 10ms (pretty much whatever the fastest available interval is)
 	setTimeout("surface.step()",10);
